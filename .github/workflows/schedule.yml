@@ -21,8 +21,13 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-          playwright install
+          pip install pytest pytest-playwright openpyxl
+          playwright install --with-deps
 
-      - name: Run Smoke Tests
+      - name: Run Automation Script (with email)
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
         run: |
-          pytest -m smoke -v
+          python run.py
