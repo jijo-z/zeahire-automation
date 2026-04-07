@@ -1,0 +1,44 @@
+Jerin Jose
+📧 Jerin@zealogics.com
+📍 Kottayam, Kerala
+🎓 Bachelor of Computer Applications (BCA)
+📱 +91-XXXXXXXXXX
+
+Professional Summary
+Entry-level Senior Software Test Engineer with strong foundational knowledge in manual and automation testing, keen eye for detail, and a passion for software quality. Experienced in collaborating with cross-functional teams to identify and resolve bugs, analyze performance issues, and ensure a user-focused testing approach. Adept in test case design, bug reporting, and continuous improvement practices.
+
+Technical Skills
+- Testing Tools: Selenium, JIRA (or similar), TestLink, Postman
+- Languages: Java (basic), Python (basic), SQL
+- Testing Types: Manual Testing, Regression, Smoke Testing, Integration Testing
+- Methodologies: Agile, Scrum
+- Platforms: Windows, Web, Android
+- Documentation: Test Case Creation, Bug Reporting, Test Reports
+
+Key Projects
+Project: Web-based Inventory Management System
+- Created and executed test scenarios for inventory tracking features.
+- Logged bugs and collaborated with the dev team to reproduce and resolve issues.
+- Participated in daily scrum meetings, reporting progress and challenges.
+
+Project: Mobile App Testing for E-Commerce Platform
+- Conducted functional and usability testing for Android application.
+- Designed manual test cases covering cart, search, payment, and order tracking flows.
+
+Education
+Bachelor of Computer Applications (BCA)
+St. Thomas College, Kottayam
+Graduated: 2019
+
+Certifications
+- ISTQB Foundation Level (optional)
+- Software Testing Course – (if any, mention here)
+
+Soft Skills
+- Strong Analytical and Problem-Solving Skills
+- Team Player with Excellent Communication
+- Fast Learner and Adaptive to New Technologies
+
+Additional Information
+- Open to relocation and flexible work environment
+- Committed to continuous learning and growth
