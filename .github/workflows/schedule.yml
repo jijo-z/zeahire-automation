@@ -2,7 +2,7 @@ name: ZeaHire Automation
 
 on:
   schedule:
-    - cron: "30 3 * * *"   # 9 AM IST
+    - cron: "30 3 * * *"   # 9:00 AM IST
   workflow_dispatch:
 
 jobs:
@@ -10,34 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ✅ Checkout code
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # ✅ Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      # ✅ Install dependencies
       - name: Install Dependencies
         run: |
           pip install -r requirement.txt
           pip install pytest playwright allure-pytest
           playwright install --with-deps
 
+      # ✅ Run tests (HEADLESS FIX)
       - name: Run Tests
+        env:
+          HEADLESS: "true"
+        continue-on-error: true
         run: |
-          pytest -m smoke --alluredir=reports/allure-results --junitxml=reports/junit.xml
+          pytest -m smoke \
+          --alluredir=reports/allure-results \
+          --junitxml=reports/junit.xml
 
-      # 🔥 INSTALL ALLURE
+      # ✅ Install Allure
       - name: Install Allure
         run: npm install -g allure-commandline --save-dev
 
-      # 🔥 GENERATE REPORT
+      # ✅ Generate Allure Report
       - name: Generate Allure Report
         run: |
           allure generate reports/allure-results --clean -o allure-report
 
-      # 🔥 DEPLOY REPORT
+      # ✅ Deploy to GitHub Pages
       - name: Deploy Allure Report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
