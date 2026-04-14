@@ -1,0 +1,34 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    Validate Jobs page loads and key components are visible
+    ","2245","test_jobs_page_load","tests","2026-04-14","passed","2026-04-14","","test_jobs_page_load","",""
+"","37939","test_interview_template","tests","2026-04-14","passed","2026-04-14","","test_interview_template","",""
+"","1265","test_schedule_page_load","tests","2026-04-14","passed","2026-04-14","","test_schedule_page_load","",""
+"","20659","test_create_job_smoke","tests","2026-04-14","passed","2026-04-14","","test_create_job","",""
+"","1390","test_insights_page_load","tests","2026-04-14","passed","2026-04-14","","test_insights_page_load","",""
+"","1323","test_candidates_page_load","tests","2026-04-14","passed","2026-04-14","","test_candidate_page_load","",""
+"","10745","test_schedule_interview_smoke","tests","2026-04-14","passed","2026-04-14","","test_schedule_interview_smoke","",""
+"","30291","test_settings_page_load","tests","2026-04-14","broken","2026-04-14","","test_settings_page","",""
+"","1632","test_dashboard_elements_visibility","tests","2026-04-14","passed","2026-04-14","","test_dashboard","",""
+"","2592","test_how_it_works_page_load","tests","2026-04-14","passed","2026-04-14","","test_how_it_works_page","",""
+"
+    Smoke test:
+    Verify Interviews page loads and main components are visible
+    ","1445","test_interviews_page_load","tests","2026-04-14","passed","2026-04-14","","test_interviews_page_load","",""
+"
+    Smoke test:
+    - Open Candidates
+    - Add candidate
+    - Associate job
+    - Upload multiple resumes
+    - Upload & parse
+    - Verify success toast
+    ","9090","test_resume_parsing_smoke","tests","2026-04-14","passed","2026-04-14","","test_resume_parsing_smoke","",""
+"","1253","test_team_management_page_load","tests","2026-04-14","passed","2026-04-14","","test_team_management_load","",""
+"","305","test_audit_history_page_load","tests","2026-04-14","passed","2026-04-14","","test_audit_history_page_load","",""
+"
+    Smoke test:
+    - Open Team Management
+    - Add a team member
+    - Verify invitation success
+    ","4499","test_add_team_member_smoke","tests","2026-04-14","passed","2026-04-14","","test_add_team_member_smoke","",""
