@@ -2,7 +2,7 @@ name: ZeaHire Automation
 
 on:
   schedule:
-    - cron: "30 3 * * *"   # 9:00 AM IST
+    - cron: "30 3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -15,30 +15,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🔹 Checkout code
+      # Checkout
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 🔹 Setup Python
+      # Python setup
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # 🔹 Install Dependencies (FIXED PATH)
+      # Install deps
       - name: Install Dependencies
         run: |
-          cd Zeahire_automation_playwright
           pip install -r requirements.txt
           playwright install --with-deps
 
-      # 🔹 Run Tests
+      # Run tests
       - name: Run Tests
         run: |
-          cd Zeahire_automation_playwright
           pytest --alluredir=allure-results
 
-      # 🔹 Install Allure
+      # Install Allure
       - name: Install Allure
         run: |
           sudo apt-get update
@@ -48,33 +46,22 @@ jobs:
           sudo mv allure-2.27.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
 
-      # 🔹 Generate Allure Report
+      # Generate report
       - name: Generate Allure Report
         run: |
-          cd Zeahire_automation_playwright
           allure generate allure-results -o allure-report --clean
 
-      # 🔹 Ensure index.html exists
-      - name: Ensure index.html exists
-        run: |
-          cd Zeahire_automation_playwright
-          if [ ! -f allure-report/index.html ]; then
-            echo "index.html not found!"
-            exit 1
-          fi
-
-      # 🔹 Upload Pages Artifact
+      # Upload report
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: Zeahire_automation_playwright/allure-report
+          path: allure-report
 
-      # 🔹 Deploy to GitHub Pages
+      # Deploy pages
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
 
-      # 🔹 Send Email (FINAL STEP)
+      # Send email
       - name: Send Email with Report Link
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
@@ -92,14 +79,7 @@ jobs:
 
           report_url = "https://jijo-z.github.io/zeahire-automation/"
 
-          body = f"""
-          ZeaHire Automation Execution Completed
-
-          View Full Report:
-          {report_url}
-          """
-
-          msg = MIMEText(body)
+          msg = MIMEText(f"Automation completed.\n\nReport: {report_url}")
           msg["Subject"] = "ZeaHire Automation Report"
           msg["From"] = sender
           msg["To"] = ", ".join(receivers)
