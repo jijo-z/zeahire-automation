@@ -27,12 +27,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install allure-pytest   # 🔥 fallback safety
+          pip install allure-pytest
           playwright install --with-deps
 
-      - name: Run Tests
+      - name: Run Tests (HEADLESS FIX)
         run: |
-          pytest --alluredir=allure-results
+          pytest --alluredir=allure-results --headed=false
 
       - name: Install Allure CLI
         run: |
