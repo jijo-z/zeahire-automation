@@ -25,15 +25,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      # 🔹 Install dependencies
+      # 🔹 Install Dependencies (FIXED PATH)
       - name: Install Dependencies
         run: |
+          cd Zeahire_automation_playwright
           pip install -r requirements.txt
           playwright install --with-deps
 
-      # 🔹 Run tests
+      # 🔹 Run Tests
       - name: Run Tests
         run: |
+          cd Zeahire_automation_playwright
           pytest --alluredir=allure-results
 
       # 🔹 Install Allure
@@ -49,21 +51,23 @@ jobs:
       # 🔹 Generate Allure Report
       - name: Generate Allure Report
         run: |
+          cd Zeahire_automation_playwright
           allure generate allure-results -o allure-report --clean
 
       # 🔹 Ensure index.html exists
       - name: Ensure index.html exists
         run: |
+          cd Zeahire_automation_playwright
           if [ ! -f allure-report/index.html ]; then
             echo "index.html not found!"
             exit 1
           fi
 
-      # 🔹 Upload Pages artifact
+      # 🔹 Upload Pages Artifact
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: allure-report
+          path: Zeahire_automation_playwright/allure-report
 
       # 🔹 Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
