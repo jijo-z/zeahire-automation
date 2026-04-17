@@ -16,17 +16,17 @@ jobs:
 
     steps:
 
-      # ✅ Checkout repo
+      # 🔹 Checkout repo
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ✅ Setup Python
+      # 🔹 Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ✅ Install dependencies + Playwright
+      # 🔹 Install dependencies
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
@@ -34,12 +34,12 @@ jobs:
           pip install allure-pytest
           playwright install --with-deps
 
-      # ✅ Run tests (HEADLESS — controlled in code)
+      # 🔹 Run tests (headless controlled in code)
       - name: Run Tests
         run: |
           pytest --alluredir=allure-results
 
-      # ✅ Install Allure CLI
+      # 🔹 Install Allure CLI
       - name: Install Allure CLI
         run: |
           sudo apt-get update
@@ -49,24 +49,24 @@ jobs:
           sudo mv allure-2.27.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
 
-      # ✅ Generate report
+      # 🔹 Generate Allure report
       - name: Generate Allure Report
         run: |
           allure generate allure-results -o allure-report --clean
 
-      # ✅ Upload report
+      # 🔹 Upload report
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: allure-report
 
-      # ✅ Deploy to GitHub Pages
+      # 🔹 Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      # ✅ Send Email (ONLY if success)
+      # 🔹 Send email
       - name: Send Email with Report Link
-        if: success()
+        if: always()   # 👈 send even if tests fail
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
@@ -82,7 +82,7 @@ jobs:
 
           report_url = "https://jijo-z.github.io/zeahire-automation/"
 
-          msg = MIMEText(f"Automation completed successfully.\n\nView report:\n{report_url}")
+          msg = MIMEText(f"ZeaHire Automation Run Completed.\n\nReport:\n{report_url}")
           msg["Subject"] = "ZeaHire Automation Report"
           msg["From"] = sender
           msg["To"] = ", ".join(receivers)
