@@ -1,4 +1,4 @@
-name: ZeaHire Automation V2
+name: ZeaHire Automation
 
 on:
   schedule:
@@ -111,3 +111,4 @@ server.login(sender, password)
 server.sendmail(sender, receiver_list, msg.as_string())
 server.quit()
 EOF
+# refresh
