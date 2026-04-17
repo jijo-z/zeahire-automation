@@ -11,7 +11,7 @@ BASE_URL = os.getenv("BASE_URL", "https://qa.zeahire.ai")
 EMAIL = os.getenv("EMAIL", "Jijo@zealogics.com")
 PASSWORD = os.getenv("PASSWORD", "Admin@123")
 
-HEADLESS = os.getenv("HEADLESS", "false").lower() == "true"
+HEADLESS = os.getenv("HEADLESS", "true" if os.getenv("CI") else "false").lower() == "true"
 SLOW_MO = int(os.getenv("SLOW_MO", "0"))
 
 
