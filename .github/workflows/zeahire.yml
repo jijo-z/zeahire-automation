@@ -30,9 +30,9 @@ jobs:
           pip install allure-pytest
           playwright install --with-deps
 
-      - name: Run Tests (HEADLESS FIX)
+      - name: Run Tests
         run: |
-          pytest --alluredir=allure-results --headed=false
+          pytest --alluredir=allure-results
 
       - name: Install Allure CLI
         run: |
