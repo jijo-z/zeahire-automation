@@ -1,9 +1,9 @@
 name: ZeaHire Automation
 
 on:
-  schedule:
-    - cron: "30 3 * * *"   # 9:00 AM IST
   workflow_dispatch:
+  schedule:
+    - cron: "30 3 * * *"
 
 permissions:
   contents: read
@@ -15,25 +15,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      # Checkout
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # Install deps
       - name: Install Dependencies
         run: |
           pip install -r requirement.txt
           pip install pytest playwright allure-pytest
           playwright install --with-deps
 
-      # Run tests
       - name: Run Tests
         continue-on-error: true
         run: |
@@ -41,74 +36,25 @@ jobs:
           --alluredir=reports/allure-results \
           --junitxml=reports/junit.xml
 
-      # Install Allure
       - name: Install Allure
         run: npm install -g allure-commandline --save-dev
 
-      # Generate report
       - name: Generate Allure Report
         run: |
           mkdir -p reports/allure-results
           allure generate reports/allure-results --clean -o allure-report || echo "Allure failed"
 
-      # Fix 404 issue
       - name: Ensure index.html exists
         run: |
           mkdir -p allure-report
           if [ ! -f allure-report/index.html ]; then
-            echo "<h1>No Report Generated</h1>" > allure-report/index.html
+            echo "<h1>No Report</h1>" > allure-report/index.html
           fi
 
-      # Upload to Pages
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./allure-report
 
-      # Deploy
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
-
-      # Send Email
-      - name: Send Email with Report Link
-        env:
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-          EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
-        run: |
-          python - <<EOF
-import os
-import smtplib
-from email.mime.text import MIMEText
-
-sender = os.getenv("EMAIL_USER")
-password = os.getenv("EMAIL_PASS")
-receivers = os.getenv("EMAIL_RECEIVERS")
-
-if not receivers:
-    raise Exception("EMAIL_RECEIVERS not set")
-
-receiver_list = [r.strip() for r in receivers.split(",")]
-
-report_url = "https://jijo-z.github.io/zeahire-automation/"
-
-body = f"""
-Automation Execution Completed
-
-View Report:
-{report_url}
-"""
-
-msg = MIMEText(body)
-msg["Subject"] = "ZeaHire Automation Report"
-msg["From"] = sender
-msg["To"] = ", ".join(receiver_list)
-
-server = smtplib.SMTP("smtp.gmail.com", 587)
-server.starttls()
-server.login(sender, password)
-server.sendmail(sender, receiver_list, msg.as_string())
-server.quit()
-EOF
-# refresh
