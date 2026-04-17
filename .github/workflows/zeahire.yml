@@ -2,7 +2,7 @@ name: ZeaHire Automation
 
 on:
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "30 3 * * *"   # 9:00 AM IST
   workflow_dispatch:
 
 permissions:
@@ -15,28 +15,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout
+      # 🔹 Checkout repo
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Python setup
+      # 🔹 Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # Install deps
+      # 🔹 Install dependencies
       - name: Install Dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           playwright install --with-deps
 
-      # Run tests
+      # 🔹 Run tests
       - name: Run Tests
         run: |
           pytest --alluredir=allure-results
 
-      # Install Allure
+      # 🔹 Install Allure
       - name: Install Allure
         run: |
           sudo apt-get update
@@ -46,23 +47,24 @@ jobs:
           sudo mv allure-2.27.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
 
-      # Generate report
+      # 🔹 Generate Allure Report
       - name: Generate Allure Report
         run: |
           allure generate allure-results -o allure-report --clean
 
-      # Upload report
+      # 🔹 Upload report artifact
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: allure-report
 
-      # Deploy pages
+      # 🔹 Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      # Send email
+      # 🔹 Send Email (ONLY runs if everything above passed)
       - name: Send Email with Report Link
+        if: success()
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
@@ -79,7 +81,14 @@ jobs:
 
           report_url = "https://jijo-z.github.io/zeahire-automation/"
 
-          msg = MIMEText(f"Automation completed.\n\nReport: {report_url}")
+          body = f"""
+          ZeaHire Automation Execution Completed ✅
+
+          View Full Report:
+          {report_url}
+          """
+
+          msg = MIMEText(body)
           msg["Subject"] = "ZeaHire Automation Report"
           msg["From"] = sender
           msg["To"] = ", ".join(receivers)
