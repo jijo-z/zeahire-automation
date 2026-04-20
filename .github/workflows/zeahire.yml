@@ -85,30 +85,37 @@ jobs:
       if: always()
       continue-on-error: true
       env:
-        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        EMAIL_USERNAME: ${{ secrets.EMAIL_USER }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASS }}
+        EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
       run: |
         python - <<EOF
+        import os
         import smtplib
         from email.mime.text import MIMEText
+
+        EMAIL = os.environ.get("EMAIL_USERNAME")
+        PASSWORD = os.environ.get("EMAIL_PASSWORD")
+        TO = os.environ.get("EMAIL_RECEIVERS")
+
+        print("Using email:", EMAIL)
 
         report_url = "https://jijo-z.github.io/zeahire-automation/"
 
         msg = MIMEText(f"Allure Report: {report_url}")
         msg['Subject'] = 'ZeaHire Automation Report'
-        msg['From'] = "${EMAIL_USERNAME}"
-        msg['To'] = "${EMAIL_USERNAME}"
+        msg['From'] = EMAIL
+        msg['To'] = TO
 
         try:
             server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            server.login("${EMAIL_USERNAME}", "${EMAIL_PASSWORD}")
+            server.login(EMAIL, PASSWORD)
             server.send_message(msg)
             server.quit()
-            print("Email sent")
+            print("✅ Email sent")
         except Exception as e:
-            print(e)
+            print("❌ Email failed:", e)
         EOF
-
     # ================= FORCE SUCCESS =================
     - name: Force Success
       if: always()
