@@ -39,7 +39,7 @@ jobs:
         pytest --reruns 2 --alluredir=allure-results
       continue-on-error: true
 
-    # ================= INSTALL ALLURE (FIXED) =================
+    # ================= INSTALL ALLURE =================
     - name: Install Allure CLI
       if: always()
       run: |
@@ -65,7 +65,9 @@ jobs:
     - name: Debug Report
       if: always()
       run: |
+        echo "Root files:"
         ls -la
+        echo "Allure report:"
         ls -la allure-report || echo "Report missing"
 
     # ================= UPLOAD =================
@@ -81,7 +83,7 @@ jobs:
       uses: actions/deploy-pages@v4
 
     # ================= EMAIL =================
-    - name: Send Email
+    - name: Send Email Notification
       if: always()
       continue-on-error: true
       env:
@@ -93,29 +95,43 @@ jobs:
         import os
         import smtplib
         from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
 
-        EMAIL = os.environ.get("EMAIL_USERNAME")
-        PASSWORD = os.environ.get("EMAIL_PASSWORD")
-        TO = os.environ.get("EMAIL_RECEIVERS")
-
-        print("Using email:", EMAIL)
+        EMAIL = os.getenv("EMAIL_USERNAME")
+        PASSWORD = os.getenv("EMAIL_PASSWORD")
+        TO = os.getenv("EMAIL_RECEIVERS")
 
         report_url = "https://jijo-z.github.io/zeahire-automation/"
 
-        msg = MIMEText(f"Allure Report: {report_url}")
-        msg['Subject'] = 'ZeaHire Automation Report'
-        msg['From'] = EMAIL
+        msg = MIMEMultipart()
+        msg['From'] = f"ZeaHire Bot <{EMAIL}>"
         msg['To'] = TO
+        msg['Subject'] = "ZeaHire CI Report ✔"
+
+        body = f"""
+        Hello,
+
+        Your ZeaHire automation execution has completed.
+
+        🔗 Report:
+        {report_url}
+
+        Regards,
+        ZeaHire CI
+        """
+
+        msg.attach(MIMEText(body, 'plain'))
 
         try:
             server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
             server.login(EMAIL, PASSWORD)
-            server.send_message(msg)
+            server.sendmail(EMAIL, TO.split(","), msg.as_string())
             server.quit()
             print("✅ Email sent")
         except Exception as e:
             print("❌ Email failed:", e)
         EOF
+
     # ================= FORCE SUCCESS =================
     - name: Force Success
       if: always()
