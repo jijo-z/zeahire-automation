@@ -3,8 +3,6 @@ name: ZeaHire Stable CI
 on:
   push:
     branches: [ main ]
-  schedule:
-    - cron: "30 3 * * *"   # 9 AM IST
   workflow_dispatch:
 
 permissions:
@@ -22,13 +20,11 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-
     # ================= PYTHON =================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
-
 
     # ================= INSTALL =================
     - name: Install Dependencies
@@ -37,64 +33,41 @@ jobs:
         pip install pytest pytest-rerunfailures allure-pytest
         playwright install --with-deps
 
-
     # ================= RUN TESTS =================
     - name: Run Tests (DO NOT FAIL PIPELINE)
       run: |
         pytest --reruns 2 --alluredir=allure-results
       continue-on-error: true
 
-
-    # ================= INSTALL ALLURE =================
-    - name: Install Allure CLI
-      if: always()
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y default-jre
-        wget https://github.com/allure-framework/allure2/releases/latest/download/allure-2.27.0.tgz
-        tar -xvzf allure-2.27.0.tgz
-        sudo mv allure-2.27.0 /opt/allure
-        sudo ln -s /opt/allure/bin/allure /usr/bin/allure
-
-
-    # ================= GENERATE REPORT =================
+    # ================= GENERATE ALLURE (FIXED) =================
     - name: Generate Allure Report
       if: always()
-      run: |
-        if [ -d "allure-results" ]; then
-          allure generate allure-results -o allure-report --clean
-        else
-          mkdir -p allure-report
-          echo "<h1>No results found</h1>" > allure-report/index.html
-        fi
+      uses: simple-elf/allure-report-action@v1
+      with:
+        allure_results: allure-results
+        allure_report: allure-report
 
-
-    # ================= DEBUG (IMPORTANT) =================
-    - name: Debug Report Folder
+    # ================= DEBUG =================
+    - name: Debug Report
       if: always()
       run: |
-        echo "Root files:"
         ls -la
-        echo "Allure report:"
-        ls -la allure-report || echo "No allure-report folder"
-
+        ls -la allure-report || echo "No report generated"
 
     # ================= UPLOAD =================
     - name: Upload Pages Artifact
       if: always()
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./allure-report
-
+        path: allure-report
 
     # ================= DEPLOY =================
     - name: Deploy to GitHub Pages
       if: always()
       uses: actions/deploy-pages@v4
 
-
     # ================= EMAIL =================
-    - name: Send Email with Report Link
+    - name: Send Email
       if: always()
       continue-on-error: true
       env:
@@ -117,11 +90,10 @@ jobs:
             server.login("${EMAIL_USERNAME}", "${EMAIL_PASSWORD}")
             server.send_message(msg)
             server.quit()
-            print("Email sent successfully!")
+            print("Email sent")
         except Exception as e:
-            print(f"Email failed: {e}")
+            print(e)
         EOF
-
 
     # ================= FORCE SUCCESS =================
     - name: Force Success
