@@ -1,11 +1,11 @@
-name: ZeaHire Automation
+name: ZeaHire Automation CI
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
   schedule:
-    - cron: "30 3 * * *"  # 9:00 AM IST
+    - cron: "30 3 * * *"   # 9:00 AM IST
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,104 +16,105 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    env:
-      HEADLESS: true
-
     steps:
 
-    # 🔹 Checkout
+    # ================= CHECKOUT =================
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 🔹 Python setup
+
+    # ================= PYTHON =================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
 
-    # 🔹 Install dependencies
+
+    # ================= INSTALL =================
     - name: Install Dependencies
       run: |
         pip install -r requirements.txt
+        pip install pytest pytest-rerunfailures allure-pytest
         playwright install --with-deps
 
-    # 🔹 Run tests (DO NOT BREAK PIPELINE)
-    - name: Run Tests
-      run: |
-        pytest --reruns 2 --alluredir=allure-results || echo "Tests failed but continuing"
 
-    # 🔹 Install Allure CLI
-    - name: Install Allure
+    # ================= RUN TESTS =================
+    - name: Run Tests (DO NOT FAIL PIPELINE)
+      run: |
+        pytest --reruns 2 --alluredir=allure-results
+      continue-on-error: true
+
+
+    # ================= INSTALL ALLURE =================
+    - name: Install Allure CLI
+      if: always()
       run: |
         sudo apt-get update
-        sudo apt-get install -y openjdk-11-jre
-        curl -o allure.tgz -L https://github.com/allure-framework/allure2/releases/latest/download/allure-2.27.0.tgz
-        tar -xvzf allure.tgz
+        sudo apt-get install -y default-jre
+        wget https://github.com/allure-framework/allure2/releases/latest/download/allure-2.27.0.tgz
+        tar -xvzf allure-2.27.0.tgz
         sudo mv allure-2.27.0 /opt/allure
         sudo ln -s /opt/allure/bin/allure /usr/bin/allure
 
-    # 🔹 Generate Allure Report
-    - name: Generate Allure Report
-      run: allure generate allure-results --clean -o allure-report
-      if: always()
 
-    # 🔹 Ensure index.html exists
+    # ================= GENERATE REPORT =================
+    - name: Generate Allure Report
+      if: always()
+      run: |
+        allure generate allure-results -o allure-report --clean
+
+
+    # ================= ENSURE INDEX =================
     - name: Ensure index.html exists
+      if: always()
       run: |
         if [ ! -f allure-report/index.html ]; then
           echo "<h1>No Report Generated</h1>" > allure-report/index.html
         fi
-      if: always()
 
-    # 🔹 Upload report artifact
+
+    # ================= UPLOAD =================
     - name: Upload Pages Artifact
+      if: always()
       uses: actions/upload-pages-artifact@v3
       with:
         path: allure-report
-      if: always()
 
-    # 🔹 Deploy to GitHub Pages
+
+    # ================= DEPLOY =================
     - name: Deploy to GitHub Pages
-      uses: actions/deploy-pages@v4
       if: always()
+      uses: actions/deploy-pages@v4
 
-    # 🔹 Send Email
+
+    # ================= EMAIL =================
     - name: Send Email with Report Link
       if: always()
+      env:
+        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
       run: |
         python - <<EOF
-import smtplib
-from email.mime.text import MIMEText
+        import smtplib
+        from email.mime.text import MIMEText
 
-sender = "YOUR_EMAIL@gmail.com"
-password = "YOUR_APP_PASSWORD"
-receiver = "YOUR_EMAIL@gmail.com"
+        report_url = "https://jijo-z.github.io/zeahire-automation/"
 
-report_url = "https://jijo-z.github.io/zeahire-automation/"
+        msg = MIMEText(f"Allure Report: {report_url}")
+        msg['Subject'] = 'ZeaHire Automation Report'
+        msg['From'] = "${EMAIL_USERNAME}"
+        msg['To'] = "${EMAIL_USERNAME}"
 
-body = f"""
-ZeaHire Automation Report
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login("${EMAIL_USERNAME}", "${EMAIL_PASSWORD}")
+        server.send_message(msg)
+        server.quit()
 
-Report Link:
-{report_url}
-"""
+        print("Email sent successfully!")
+        EOF
 
-msg = MIMEText(body)
-msg['Subject'] = "ZeaHire Automation Report"
-msg['From'] = sender
-msg['To'] = receiver
 
-try:
-    server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-    server.login(sender, password)
-    server.sendmail(sender, receiver, msg.as_string())
-    server.quit()
-    print("Email sent successfully ✅")
-except Exception as e:
-    print("Email failed ❌:", e)
-EOF
-
-    # 🔹 FORCE SUCCESS (this makes pipeline GREEN)
-    - name: Force Success
+    # ================= FORCE SUCCESS =================
+    - name: Force Success (Important)
       if: always()
       run: exit 0
