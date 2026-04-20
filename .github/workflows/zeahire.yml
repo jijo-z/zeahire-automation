@@ -83,55 +83,42 @@ jobs:
       uses: actions/deploy-pages@v4
 
     # ================= EMAIL =================
-    - name: Send Email Notification
+    - name: Send Email via SendGrid
       if: always()
       continue-on-error: true
       env:
-        EMAIL_USERNAME: ${{ secrets.EMAIL_USER }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASS }}
-        EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
+        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
       run: |
         python - <<EOF
         import os
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
+        import requests
 
-        EMAIL = os.getenv("EMAIL_USERNAME")
-        PASSWORD = os.getenv("EMAIL_PASSWORD")
-        TO = os.getenv("EMAIL_RECEIVERS")
+        api_key = os.getenv("SENDGRID_API_KEY")
 
-        report_url = "https://jijo-z.github.io/zeahire-automation/"
+        url = "https://api.sendgrid.com/v3/mail/send"
 
-        msg = MIMEMultipart()
-        msg['From'] = f"ZeaHire Bot <{EMAIL}>"
-        msg['To'] = TO
-        msg['Subject'] = "ZeaHire CI Report ✔"
+        data = {
+          "personalizations": [{
+            "to": [{"email": "your_email@gmail.com"}]
+          }],
+          "from": {"email": "your_email@gmail.com"},
+          "subject": "ZeaHire CI Report ✔",
+          "content": [{
+            "type": "text/plain",
+            "value": "Report: https://jijo-z.github.io/zeahire-automation/"
+          }]
+        }
 
-        body = f"""
-        Hello,
+        headers = {
+          "Authorization": f"Bearer {api_key}",
+          "Content-Type": "application/json"
+        }
 
-        Your ZeaHire automation execution has completed.
+        r = requests.post(url, json=data, headers=headers)
 
-        🔗 Report:
-        {report_url}
-
-        Regards,
-        ZeaHire CI
-        """
-
-        msg.attach(MIMEText(body, 'plain'))
-
-        try:
-            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            server.login(EMAIL, PASSWORD)
-            server.sendmail(EMAIL, TO.split(","), msg.as_string())
-            server.quit()
-            print("✅ Email sent")
-        except Exception as e:
-            print("❌ Email failed:", e)
+        print("Status:", r.status_code)
+        print(r.text)
         EOF
-
     # ================= FORCE SUCCESS =================
     - name: Force Success
       if: always()
