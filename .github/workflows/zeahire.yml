@@ -1,10 +1,10 @@
-name: ZeaHire Automation CI
+name: ZeaHire Stable CI
 
 on:
   push:
     branches: [ main ]
   schedule:
-    - cron: "30 3 * * *"   # 9:00 AM IST
+    - cron: "30 3 * * *"   # 9 AM IST
   workflow_dispatch:
 
 permissions:
@@ -90,6 +90,7 @@ jobs:
     # ================= EMAIL =================
     - name: Send Email with Report Link
       if: always()
+      continue-on-error: true
       env:
         EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
@@ -105,16 +106,18 @@ jobs:
         msg['From'] = "${EMAIL_USERNAME}"
         msg['To'] = "${EMAIL_USERNAME}"
 
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.login("${EMAIL_USERNAME}", "${EMAIL_PASSWORD}")
-        server.send_message(msg)
-        server.quit()
-
-        print("Email sent successfully!")
+        try:
+            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+            server.login("${EMAIL_USERNAME}", "${EMAIL_PASSWORD}")
+            server.send_message(msg)
+            server.quit()
+            print("Email sent successfully!")
+        except Exception as e:
+            print(f"Email failed: {e}")
         EOF
 
 
     # ================= FORCE SUCCESS =================
-    - name: Force Success (Important)
+    - name: Force Success (IMPORTANT)
       if: always()
       run: exit 0
