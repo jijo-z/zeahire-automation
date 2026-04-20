@@ -61,16 +61,22 @@ jobs:
     - name: Generate Allure Report
       if: always()
       run: |
-        allure generate allure-results -o allure-report --clean
+        if [ -d "allure-results" ]; then
+          allure generate allure-results -o allure-report --clean
+        else
+          mkdir -p allure-report
+          echo "<h1>No results found</h1>" > allure-report/index.html
+        fi
 
 
-    # ================= ENSURE INDEX =================
-    - name: Ensure index.html exists
+    # ================= DEBUG (IMPORTANT) =================
+    - name: Debug Report Folder
       if: always()
       run: |
-        if [ ! -f allure-report/index.html ]; then
-          echo "<h1>No Report Generated</h1>" > allure-report/index.html
-        fi
+        echo "Root files:"
+        ls -la
+        echo "Allure report:"
+        ls -la allure-report || echo "No allure-report folder"
 
 
     # ================= UPLOAD =================
@@ -78,7 +84,7 @@ jobs:
       if: always()
       uses: actions/upload-pages-artifact@v3
       with:
-        path: allure-report
+        path: ./allure-report
 
 
     # ================= DEPLOY =================
@@ -118,6 +124,6 @@ jobs:
 
 
     # ================= FORCE SUCCESS =================
-    - name: Force Success (IMPORTANT)
+    - name: Force Success
       if: always()
       run: exit 0
