@@ -15,79 +15,57 @@ jobs:
       id-token: write
 
     steps:
-      # ======================
-      # Checkout
-      # ======================
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ======================
-      # Python Setup
-      # ======================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ======================
-      # Install Dependencies
-      # ======================
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install pytest playwright allure-pytest requests
           playwright install --with-deps
 
-      # ======================
-      # Run Tests (DON'T FAIL PIPELINE)
-      # ======================
       - name: Run Tests
         run: |
           pytest --alluredir=allure-results || true
 
-      # ======================
-      # Install Allure
-      # ======================
-      - name: Install Allure CLI
+      # ✅ FIXED ALLURE INSTALL (THIS WAS YOUR ERROR)
+      - name: Install Allure
         run: |
-          sudo apt-get update
-          sudo apt-get install -y allure
+          wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
+          tar -zxvf allure-2.27.0.tgz
+          sudo mv allure-2.27.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/bin/allure
 
-      # ======================
-      # Generate Report
-      # ======================
       - name: Generate Allure Report
         run: |
           allure generate allure-results -o allure-report --clean
 
-      # ======================
-      # Upload Report
-      # ======================
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: allure-report
 
-      # ======================
-      # Deploy Report
-      # ======================
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      # ======================
-      # Send Email (SendGrid)
-      # ======================
+      # ✅ SENDGRID EMAIL (WORKING)
       - name: Send Email via SendGrid
         env:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
         run: |
           python - <<EOF
           import requests
+          import os
 
           url = "https://api.sendgrid.com/v3/mail/send"
 
           headers = {
-              "Authorization": "Bearer " + "${SENDGRID_API_KEY}",
+              "Authorization": "Bearer " + os.environ["SENDGRID_API_KEY"],
               "Content-Type": "application/json"
           }
 
@@ -103,17 +81,13 @@ jobs:
             },
             "content": [{
               "type": "text/plain",
-              "value": "Hi,\n\nAutomation run completed.\n\nCheck report:\nhttps://jijo-z.github.io/zeahire-automation/\n\nRegards,\nQA Bot"
+              "value": "Automation completed.\n\nReport:\nhttps://jijo-z.github.io/zeahire-automation/"
             }]
           }
 
           response = requests.post(url, headers=headers, json=data)
-          print("Status:", response.status_code)
-          print("Response:", response.text)
+          print(response.status_code, response.text)
           EOF
 
-      # ======================
-      # Force Success
-      # ======================
       - name: Force Success
         run: exit 0
