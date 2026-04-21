@@ -5,134 +5,122 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write   # 🔥 REQUIRED for GitHub Pages
-
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    env:
-      BASE_URL: https://qa.zeahire.ai
-      EMAIL: jijo@zealogics.com
-      PASSWORD: Admin@123
-      HEADLESS: true
-      RECIPIENTS: jijo@zealogics.com,sheefeena@zealogics.com
+    permissions:
+      contents: read
+      pages: write
+      id-token: write   # ✅ required for GitHub Pages
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    # ==============================
-    # Checkout
-    # ==============================
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # -------------------------
+      # 🐍 Setup Python
+      # -------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-    # ==============================
-    # Python Setup
-    # ==============================
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.12
+      # -------------------------
+      # 📦 Install Dependencies
+      # -------------------------
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-playwright allure-pytest requests
+          playwright install --with-deps
 
-    # ==============================
-    # Install Dependencies
-    # ==============================
-    - name: Install Dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest playwright allure-pytest requests
-        playwright install --with-deps
+      # -------------------------
+      # 🎭 Run Tests (HEADLESS)
+      # -------------------------
+      - name: Run Tests
+        run: |
+          pytest --alluredir=allure-results
+        continue-on-error: true   # ✅ IMPORTANT (don’t break pipeline)
 
-    # ==============================
-    # Run Tests (DO NOT BREAK PIPELINE)
-    # ==============================
-    - name: Run Tests
-      run: |
-        pytest --alluredir=allure-results || true
+      # -------------------------
+      # 📊 Install Allure (FIXED)
+      # -------------------------
+      - name: Install Allure
+        run: |
+          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-2.27.0.tgz
+          tar -zxvf allure-2.27.0.tgz
+          sudo mv allure-2.27.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/bin/allure
+          allure --version
 
-    # ==============================
-    # Install Allure CLI
-    # ==============================
-    - name: Install Allure CLI
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y allure
+      # -------------------------
+      # 📈 Generate Report
+      # -------------------------
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results -o allure-report --clean
 
-    # ==============================
-    # Generate Allure Report
-    # ==============================
-    - name: Generate Allure Report
-      run: |
-        allure generate allure-results -o allure-report --clean
+      # -------------------------
+      # 📦 Upload Artifact
+      # -------------------------
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-report
 
-    # ==============================
-    # Upload Pages Artifact
-    # ==============================
-    - name: Upload Pages Artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: allure-report
+      # -------------------------
+      # 🌍 Deploy to GitHub Pages
+      # -------------------------
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
 
-    # ==============================
-    # Deploy to GitHub Pages
-    # ==============================
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+      # -------------------------
+      # 📧 Send Email (SendGrid)
+      # -------------------------
+      - name: Send Email via SendGrid
+        env:
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+        run: |
+          python - <<EOF
+          import requests
 
-    # ==============================
-    # Send Email via SendGrid
-    # ==============================
-    - name: Send Email via SendGrid
-      if: always()
-      env:
-        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-      run: |
-        python - <<EOF
-        import os
-        import requests
+          url = "https://api.sendgrid.com/v3/mail/send"
 
-        api_key = os.getenv("SENDGRID_API_KEY")
-        recipients = os.getenv("RECIPIENTS").split(",")
+          headers = {
+              "Authorization": f"Bearer { "${{ secrets.SENDGRID_API_KEY }}" }",
+              "Content-Type": "application/json"
+          }
 
-        report_url = "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          data = {
+              "personalizations": [
+                  {
+                      "to": [
+                          {"email": "john@zealogics.com"},
+                          {"email": "johnshajan007@gmail.com"},
+                          {"email": "kamal@zealogics.com"},
+                          {"email": "shefeena@zealogics.com"}
+                      ],
+                      "subject": "ZeaHire Automation Report"
+                  }
+              ],
+              "from": {
+                  "email": "jijo@zealogics.com"
+              },
+              "content": [
+                  {
+                      "type": "text/plain",
+                      "value": "Hi Team,\n\nAutomation run completed.\n\nCheck report:\nhttps://jijo-z.github.io/zeahire-automation/\n\nRegards,\nQA Bot"
+                  }
+              ]
+          }
 
-        to_list = [{"email": r.strip()} for r in recipients]
+          response = requests.post(url, headers=headers, json=data)
+          print(response.status_code, response.text)
+          EOF
 
-        data = {
-            "personalizations": [
-                {
-                    "to": to_list
-                }
-            ],
-            "from": {"email": "jijo@zealogics.com"},
-            "subject": "ZeaHire Automation Report",
-            "content": [
-                {
-                    "type": "text/html",
-                    "value": f"<h3>Test Execution Completed</h3><p>View report: <a href='{report_url}'>{report_url}</a></p>"
-                }
-            ]
-        }
-
-        response = requests.post(
-            "https://api.sendgrid.com/v3/mail/send",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json=data
-        )
-
-        print(response.status_code, response.text)
-        EOF
-
-    # ==============================
-    # Force Success (FINAL SAFETY)
-    # ==============================
-    - name: Force Success
-      if: always()
-      run: exit 0
+      # -------------------------
+      # 🟢 Force Success (Optional)
+      # -------------------------
+      - name: Force Success
+        run: exit 0
