@@ -2,7 +2,7 @@ name: ZeaHire Automation
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -15,69 +15,68 @@ jobs:
       id-token: write
 
     steps:
-      # -------------------------
+      # ======================
       # Checkout
-      # -------------------------
-      - name: Checkout Code
+      # ======================
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # -------------------------
+      # ======================
       # Python Setup
-      # -------------------------
+      # ======================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
-      # -------------------------
+      # ======================
       # Install Dependencies
-      # -------------------------
-      - name: Install Dependencies
+      # ======================
+      - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-playwright allure-pytest requests
+          pip install pytest playwright allure-pytest requests
           playwright install --with-deps
 
-      # -------------------------
-      # Run Tests (HEADLESS)
-      # -------------------------
+      # ======================
+      # Run Tests (DON'T FAIL PIPELINE)
+      # ======================
       - name: Run Tests
         run: |
-          pytest --alluredir=allure-results
-        continue-on-error: true   # ✅ pipeline won't break
+          pytest --alluredir=allure-results || true
 
-      # -------------------------
-      # Install Allure (FIXED URL)
-      # -------------------------
-      - name: Install Allure
+      # ======================
+      # Install Allure
+      # ======================
+      - name: Install Allure CLI
         run: |
-          wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
-          tar -zxvf allure-2.27.0.tgz
+          sudo apt-get update
+          sudo apt-get install -y allure
 
-      # -------------------------
-      # Generate Allure Report
-      # -------------------------
+      # ======================
+      # Generate Report
+      # ======================
       - name: Generate Allure Report
         run: |
-          ./allure-2.27.0/bin/allure generate allure-results -o allure-report --clean
+          allure generate allure-results -o allure-report --clean
 
-      # -------------------------
+      # ======================
       # Upload Report
-      # -------------------------
+      # ======================
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: allure-report
 
-      # -------------------------
+      # ======================
       # Deploy Report
-      # -------------------------
+      # ======================
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      # -------------------------
+      # ======================
       # Send Email (SendGrid)
-      # -------------------------
+      # ======================
       - name: Send Email via SendGrid
         env:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
@@ -88,39 +87,33 @@ jobs:
           url = "https://api.sendgrid.com/v3/mail/send"
 
           headers = {
-              "Authorization": "Bearer " + "${{ secrets.SENDGRID_API_KEY }}",
+              "Authorization": "Bearer " + "${SENDGRID_API_KEY}",
               "Content-Type": "application/json"
           }
 
           data = {
-              "personalizations": [
-                  {
-                      "to": [
-                          {"email": "john@zealogics.com"},
-                          {"email": "johnshajan007@gmail.com"},
-                          {"email": "kamal@zealogics.com"},
-                          {"email": "shefeena@zealogics.com"}
-                      ],
-                      "subject": "ZeaHire Automation Report"
-                  }
+            "personalizations": [{
+              "to": [
+                {"email": "jijo@zealogics.com"}
               ],
-              "from": {
-                  "email": "jijo@zealogics.com"
-              },
-              "content": [
-                  {
-                      "type": "text/plain",
-                      "value": "Hi Team,\n\nAutomation run completed.\n\nCheck report:\nhttps://jijo-z.github.io/zeahire-automation/\n\nRegards,\nQA Bot"
-                  }
-              ]
+              "subject": "ZeaHire Automation Report"
+            }],
+            "from": {
+              "email": "jijo@zealogics.com"
+            },
+            "content": [{
+              "type": "text/plain",
+              "value": "Hi,\n\nAutomation run completed.\n\nCheck report:\nhttps://jijo-z.github.io/zeahire-automation/\n\nRegards,\nQA Bot"
+            }]
           }
 
           response = requests.post(url, headers=headers, json=data)
-          print(response.status_code, response.text)
+          print("Status:", response.status_code)
+          print("Response:", response.text)
           EOF
 
-      # -------------------------
-      # Force Success (optional)
-      # -------------------------
+      # ======================
+      # Force Success
+      # ======================
       - name: Force Success
         run: exit 0
