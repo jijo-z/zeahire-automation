@@ -5,119 +5,123 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write   # 🔥 REQUIRED for GitHub Pages
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      BASE_URL: https://qa.zeahire.ai
+      EMAIL: jijo@zealogics.com
+      PASSWORD: Admin@123
+      HEADLESS: true
+      RECIPIENTS: jijo@zealogics.com,sheefeena@zealogics.com
+
     steps:
-    # -------------------------------
+
+    # ==============================
     # Checkout
-    # -------------------------------
+    # ==============================
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # -------------------------------
-    # Setup Python
-    # -------------------------------
+    # ==============================
+    # Python Setup
+    # ==============================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: 3.12
 
-    # -------------------------------
+    # ==============================
     # Install Dependencies
-    # -------------------------------
+    # ==============================
     - name: Install Dependencies
       run: |
         pip install -r requirements.txt
-        pip install pytest allure-pytest requests
+        pip install pytest playwright allure-pytest requests
         playwright install --with-deps
 
-    # -------------------------------
-    # Run Tests (DO NOT FAIL PIPELINE)
-    # -------------------------------
+    # ==============================
+    # Run Tests (DO NOT BREAK PIPELINE)
+    # ==============================
     - name: Run Tests
-      run: pytest --alluredir=allure-results
-      continue-on-error: true
+      run: |
+        pytest --alluredir=allure-results || true
 
-    # -------------------------------
+    # ==============================
     # Install Allure CLI
-    # -------------------------------
+    # ==============================
     - name: Install Allure CLI
-      if: always()
       run: |
         sudo apt-get update
-        sudo apt-get install -y default-jre
-        wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
-        tar -xzf allure-2.27.0.tgz
-        sudo mv allure-2.27.0 /opt/allure
-        sudo ln -s /opt/allure/bin/allure /usr/bin/allure
+        sudo apt-get install -y allure
 
-    # -------------------------------
+    # ==============================
     # Generate Allure Report
-    # -------------------------------
+    # ==============================
     - name: Generate Allure Report
-      if: always()
       run: |
-        allure generate allure-results --clean -o allure-report
+        allure generate allure-results -o allure-report --clean
 
-    # -------------------------------
-    # Prepare GitHub Pages
-    # -------------------------------
-    - name: Setup Pages
-      if: always()
-      uses: actions/configure-pages@v5
-
+    # ==============================
+    # Upload Pages Artifact
+    # ==============================
     - name: Upload Pages Artifact
-      if: always()
       uses: actions/upload-pages-artifact@v3
       with:
         path: allure-report
 
-    # -------------------------------
+    # ==============================
     # Deploy to GitHub Pages
-    # -------------------------------
+    # ==============================
     - name: Deploy to GitHub Pages
-      if: always()
       id: deployment
       uses: actions/deploy-pages@v4
 
-    # -------------------------------
-    # Send Email (FIXED)
-    # -------------------------------
+    # ==============================
+    # Send Email via SendGrid
+    # ==============================
     - name: Send Email via SendGrid
       if: always()
+      env:
+        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
       run: |
         python - <<EOF
-        import requests
         import os
+        import requests
 
-        SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-        TO_EMAIL = os.getenv("TO_EMAIL")
-        FROM_EMAIL = os.getenv("FROM_EMAIL")
+        api_key = os.getenv("SENDGRID_API_KEY")
+        recipients = os.getenv("RECIPIENTS").split(",")
 
-        report_url = "https://jijo-z.github.io/zeahire-automation/"
+        report_url = "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+        to_list = [{"email": r.strip()} for r in recipients]
 
         data = {
-            "personalizations": [{
-                "to": [{"email": TO_EMAIL}],
-                "subject": "ZeaHire Automation Report"
-            }],
-            "from": {"email": FROM_EMAIL},
-            "content": [{
-                "type": "text/html",
-                "value": f"""
-                <h2>Automation Report</h2>
-                <p>Your test execution is complete.</p>
-                <p><a href="{report_url}">View Allure Report</a></p>
-                """
-            }]
+            "personalizations": [
+                {
+                    "to": to_list
+                }
+            ],
+            "from": {"email": "jijo@zealogics.com"},
+            "subject": "ZeaHire Automation Report",
+            "content": [
+                {
+                    "type": "text/html",
+                    "value": f"<h3>Test Execution Completed</h3><p>View report: <a href='{report_url}'>{report_url}</a></p>"
+                }
+            ]
         }
 
         response = requests.post(
             "https://api.sendgrid.com/v3/mail/send",
             headers={
-                "Authorization": f"Bearer {SENDGRID_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
             json=data
@@ -126,9 +130,9 @@ jobs:
         print(response.status_code, response.text)
         EOF
 
-    # -------------------------------
-    # Force Success (optional)
-    # -------------------------------
+    # ==============================
+    # Force Success (FINAL SAFETY)
+    # ==============================
     - name: Force Success
       if: always()
       run: exit 0
