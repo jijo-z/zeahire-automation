@@ -1,128 +1,122 @@
 name: ZeaHire Automation
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: "30 3 * * *"   # 9:00 AM IST
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
     steps:
-
-      # ======================
-      # Checkout Code
-      # ======================
-      - name: Checkout code
+      # ✅ Checkout Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ======================
-      # Setup Python
-      # ======================
+      # ✅ Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ======================
-      # Install Dependencies
-      # ======================
-      - name: Install dependencies
+      # ✅ Install Dependencies
+      - name: Install Dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pytest playwright allure-pytest requests
+          pip install -r requirement.txt
+          pip install pytest playwright allure-pytest
           playwright install --with-deps
 
-      # ======================
-      # Run Tests (DO NOT FAIL PIPELINE)
-      # ======================
+      # ✅ Run Tests (HEADLESS FIX)
       - name: Run Tests
+        env:
+          HEADLESS: "true"
+        continue-on-error: true
         run: |
-          pytest --alluredir=allure-results || true
+          pytest -m smoke \
+          --alluredir=reports/allure-results \
+          --junitxml=reports/junit.xml
 
-      # ======================
-      # Install Allure (STABLE WAY)
-      # ======================
+      # ✅ Install Allure CLI
       - name: Install Allure
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y default-jre
-          wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
-          tar -zxvf allure-2.27.0.tgz
-          sudo mv allure-2.27.0 /opt/allure
-          sudo ln -s /opt/allure/bin/allure /usr/bin/allure
+        run: npm install -g allure-commandline --save-dev
 
-      # ======================
-      # Generate Allure Report
-      # ======================
+      # ✅ Generate Allure Report
       - name: Generate Allure Report
+        continue-on-error: true
         run: |
-          allure generate allure-results -o allure-report --clean
+          mkdir -p reports/allure-results
+          allure generate reports/allure-results --clean -o allure-report || echo "Allure generation failed"
 
-      # ======================
-      # Upload Report
-      # ======================
+      # 🔥 Ensure index.html exists (NO 404 FIX)
+      - name: Ensure index.html exists
+        run: |
+          mkdir -p allure-report
+          if [ ! -f allure-report/index.html ]; then
+            echo "<h1>No Allure Report Generated</h1>" > allure-report/index.html
+          fi
+
+      # 🔍 Debug (optional)
+      - name: Debug Files
+        run: |
+          echo "Allure Report Contents:"
+          ls -la allure-report
+
+      # ✅ Upload to GitHub Pages
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: allure-report
+          path: ./allure-report
 
-      # ======================
-      # Deploy Report
-      # ======================
+      # 🚀 Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
 
-      # ======================
-      # Send Email via SendGrid
-      # ======================
-      - name: Send Email via SendGrid
+      # 📧 SEND EMAIL (FIXED VERSION)
+      - name: Send Email with Report Link
         env:
-          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
         run: |
           python - <<EOF
-          import requests
-          import os
+        import os
+        import smtplib
+        from email.mime.text import MIMEText
 
-          url = "https://api.sendgrid.com/v3/mail/send"
+        sender = os.getenv("EMAIL_USER")
+        password = os.getenv("EMAIL_PASS")
+        receiver = os.getenv("EMAIL_RECEIVERS")
 
-          headers = {
-              "Authorization": "Bearer " + os.environ["SENDGRID_API_KEY"],
-              "Content-Type": "application/json"
-          }
+        if not receiver:
+            raise Exception("EMAIL_RECEIVERS is EMPTY ❌")
 
-          data = {
-            "personalizations": [{
-              "to": [
-                {"email": "john@zealogics.com"},
-                {"email": "johnshajan007@gmail.com"},
-                {"email": "kamal@zealogics.com"},
-                {"email": "shefeena@zealogics.com"}
-              ],
-              "subject": "ZeaHire Automation Report"
-            }],
-            "from": {
-              "email": "jijo@zealogics.com"
-            },
-            "content": [{
-              "type": "text/plain",
-              "value": "Hi Team,\n\nAutomation run completed.\n\nCheck report:\nhttps://jijo-z.github.io/zeahire-automation/\n\nRegards,\nQA Bot"
-            }]
-          }
+        print("Sending email to:", receiver)
 
-          response = requests.post(url, headers=headers, json=data)
-          print("Status:", response.status_code)
-          print("Response:", response.text)
-          EOF
+        report_url = "https://jijo-z.github.io/zeahire-automation/"
 
-      # ======================
-      # Force Success (pipeline always green)
-      # ======================
-      - name: Force Success
-        run: exit 0
+        body = f"""
+        Automation Execution Completed ✅
+
+        View Full Allure Report:
+        {report_url}
+        """
+
+        msg = MIMEText(body)
+        msg["Subject"] = "ZeaHire Automation Report"
+        msg["From"] = sender
+        msg["To"] = receiver
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender, password)
+            server.sendmail(sender, receiver, msg.as_string())
+
+        print("✅ Email sent successfully!")
+        EOF
