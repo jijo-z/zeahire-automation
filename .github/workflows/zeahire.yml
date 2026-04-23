@@ -46,23 +46,23 @@ jobs:
           pytest --alluredir=allure-results || true
 
       # ======================
-      # Install Allure (FIXED)
+      # Install Allure (FIXED PROPERLY)
       # ======================
       - name: Install Allure
         run: |
-          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-2.29.0.tgz
+          wget https://github.com/allure-framework/allure2/releases/download/2.29.0/allure-2.29.0.tgz
           tar -zxvf allure-2.29.0.tgz
           sudo mv allure-2.29.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
 
       # ======================
-      # Verify Allure (DEBUG SAFETY)
+      # Verify Allure (DEBUG)
       # ======================
       - name: Verify Allure
         run: allure --version
 
       # ======================
-      # Generate Allure Report
+      # Generate Report
       # ======================
       - name: Generate Allure Report
         run: |
@@ -77,7 +77,7 @@ jobs:
           path: allure-report
 
       # ======================
-      # Deploy Report
+      # Deploy to GitHub Pages
       # ======================
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
@@ -122,7 +122,7 @@ jobs:
           EOF
 
       # ======================
-      # Force Success (Pipeline never fails)
+      # Force Success
       # ======================
       - name: Force Success
         run: exit 0
