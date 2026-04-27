@@ -9,111 +9,27 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
     steps:
-      # ======================
-      # Checkout
-      # ======================
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ======================
-      # Python Setup
-      # ======================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
-      # ======================
-      # Install Dependencies
-      # ======================
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest playwright allure-pytest requests
-          playwright install --with-deps
+          pip install pytest
 
-      # ======================
-      # Run Tests (DON’T FAIL PIPELINE)
-      # ======================
       - name: Run Tests
-        run: |
-          pytest --alluredir=allure-results || true
+        run: pytest || true
 
-     # Install Allure (FIXED)
-      - name: Install Allure
-        run: |
-          sudo npm install -g allure-commandline --unsafe-perm=true
-
-      # Verify Allure
-      - name: Verify Allure
-        run: allure --version
-
-      # Generate Report
-      - name: Generate Allure Report
-        run: |
-          allure generate allure-results -o allure-report --clean
-
-      # ======================
-      # Upload Report
-      # ======================
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: allure-report
-
-      # ======================
-      # Deploy to GitHub Pages
-      # ======================
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
-
-      # ======================
-      # Send Email via SendGrid (FIXED)
-      # ======================
-      - name: Send Email via SendGrid
+      # 👉 EMAIL STEP (THIS IS WHAT YOU NEED)
+      - name: Send Email via Gmail SMTP
         env:
-          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-        run: |
-          python - <<EOF
-          import requests
-          import os
-
-          url = "https://api.sendgrid.com/v3/mail/send"
-
-          headers = {
-              "Authorization": "Bearer " + os.environ["SENDGRID_API_KEY"],
-              "Content-Type": "application/json"
-          }
-
-          data = {
-            "personalizations": [{
-              "to": [
-                {"email": "jijo@zealogics.com"}
-              ],
-              "subject": "ZeaHire Automation Report"
-            }],
-            "from": {
-              "email": "jijo@zealogics.com"
-            },
-            "content": [{
-              "type": "text/plain",
-              "value": "Hi Team,\n\nAutomation run completed.\n\nCheck report:\nhttps://jijo-z.github.io/zeahire-automation/\n\nRegards,\nQA Bot"
-            }]
-          }
-
-          response = requests.post(url, headers=headers, json=data)
-          print("Status:", response.status_code)
-          print("Response:", response.text)
-          EOF
-
-      # ======================
-      # Force Success
-      # ======================
-      - name: Force Success
-        run: exit 0
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: python send_email.py
