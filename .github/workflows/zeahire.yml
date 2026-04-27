@@ -21,7 +21,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest allure-pytest
+          pip install pytest allure-pytest playwright
+
+      - name: Install Playwright Browsers
+        run: playwright install --with-deps
 
       - name: Run Tests
         run: pytest --alluredir=allure-results || true
