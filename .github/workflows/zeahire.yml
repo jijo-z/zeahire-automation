@@ -21,15 +21,14 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest allure-pytest
 
       - name: Run Tests
-        run: pytest || true
+        run: pytest --alluredir=allure-results || true
 
-      # 👉 EMAIL STEP (THIS IS WHAT YOU NEED)
       - name: Send Email via Gmail SMTP
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASS }}
+          TO_EMAIL: ${{ secrets.EMAIL_RECEIVERS }}
         run: python send_email.py
