@@ -45,25 +45,16 @@ jobs:
         run: |
           pytest --alluredir=allure-results || true
 
-      # ======================
-      # Install Allure (FIXED PROPERLY)
-      # ======================
+     # Install Allure (FIXED)
       - name: Install Allure
         run: |
-          wget https://github.com/allure-framework/allure2/releases/download/2.29.0/allure-2.29.0.tgz
-          tar -zxvf allure-2.29.0.tgz
-          sudo mv allure-2.29.0 /opt/allure
-          sudo ln -s /opt/allure/bin/allure /usr/bin/allure
+          sudo npm install -g allure-commandline --unsafe-perm=true
 
-      # ======================
-      # Verify Allure (DEBUG)
-      # ======================
+      # Verify Allure
       - name: Verify Allure
         run: allure --version
 
-      # ======================
       # Generate Report
-      # ======================
       - name: Generate Allure Report
         run: |
           allure generate allure-results -o allure-report --clean
